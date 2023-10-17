@@ -7,10 +7,19 @@
     android:padding="16dp"
     tools:context=".ui.MainActivity">
 
+    <ImageView
+        android:id="@+id/image_view"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/image_border_drawable" />
+
     <TextView
         android:id="@+id/text_equation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/image_view"
         android:layout_alignParentStart="true"
         android:layout_marginBottom="10dp"
         android:text="Equation : "
