@@ -131,7 +131,6 @@ class MainActivity : AppCompatActivity() {
         bitmap?.let { bm ->
             val inputImage = InputImage.fromBitmap(bm, 0);
             textRecognition.process(inputImage).addOnSuccessListener {
-                println("readedtext : ${it.text}")
                 readMathExpressionFromImage(it.text)
             }.addOnFailureListener {
                 mainViewModel.setEquationText(getString(R.string.failed_recognize_text))
@@ -141,7 +140,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     *
+     * validate string from image recognition to validate whether it is math expression or not
+     * by checking per character and save it as first operand, second operand, and an operator
+     * constraint :
+     *  - only very simple 2 argument operations
+     *  - operator that must be supported  +,-,*,/
      * */
     private fun readMathExpressionFromImage(text: String) {
         var firstOperand = ""
@@ -192,6 +195,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * calculate math expression with valid first operand, second operand, and an operator
+     * */
     private fun calculateMathExpression(first: String, second: String, operator: String): Int? {
         return when (operator) {
             "+" -> first.toInt() + second.toInt()
