@@ -1,6 +1,5 @@
 package com.app.scancalculator.ui
 
-
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -10,23 +9,29 @@ import android.graphics.Bitmap
 import android.provider.MediaStore
 import androidx.lifecycle.ViewModelProvider
 import com.app.scancalculator.BuildConfig
+import com.app.scancalculator.R
 import com.app.scancalculator.databinding.ActivityMainBinding
 import com.app.scancalculator.utils.ImageUtils
 import com.app.scancalculator.utils.PermissionUtils
-import com.app.scancalculator.viewmodel.ImageViewModel
+import com.app.scancalculator.viewmodel.MainViewModel
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var imageViewModel: ImageViewModel
+    private lateinit var mainViewModel: MainViewModel
+    private lateinit var textRecognizerOptions: TextRecognizerOptions
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        textRecognizerOptions = TextRecognizerOptions.Builder().build()
         binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
         binding.button.setOnClickListener {
             setupPermission()
         }
+        setContentView(binding.root)
         setupViewModel()
     }
 
@@ -37,7 +42,7 @@ class MainActivity : AppCompatActivity() {
                 if (grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED) {
                     dispatchTakeCameraIntent()
                 } else {
-                    Toast.makeText(this, "Izin kamera ditolak.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -45,7 +50,7 @@ class MainActivity : AppCompatActivity() {
                 if (grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED) {
                     dispatchTakeGalleryIntent()
                 } else {
-                    Toast.makeText(this, "Izin media image ditolak.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Media image permission denied.", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -53,7 +58,7 @@ class MainActivity : AppCompatActivity() {
                 if (grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED) {
                     dispatchTakeGalleryIntent()
                 } else {
-                    Toast.makeText(this, "Izin external storage ditolak.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "External storage permission denied.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -83,10 +88,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupViewModel() {
-        imageViewModel = ViewModelProvider(this)[ImageViewModel::class.java]
-        imageViewModel.getBitmap().observe(this) {
-            println("imagedata : $it")
+        mainViewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        mainViewModel.getBitmap().observe(this) {
             binding.imageView.setImageBitmap(it)
+        }
+        mainViewModel.getEquationText().observe(this) {
+            binding.textEquationValue.text = it
+        }
+        mainViewModel.getResultText().observe(this) {
+            binding.textResultValue.text = it
         }
     }
 
@@ -108,7 +118,89 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleImageResult(bitmap: Bitmap?) {
-        imageViewModel.setBitmap(bitmap)
+        mainViewModel.setBitmap(bitmap)
+        readTextFromImage(bitmap)
+    }
+
+    /**
+     * text recognition from image using Google ML Kit
+     * reference : https://developers.google.com/ml-kit/vision/text-recognition/v2/android?hl=id
+     * */
+    private fun readTextFromImage(bitmap: Bitmap?) {
+        val textRecognition = TextRecognition.getClient(textRecognizerOptions)
+        bitmap?.let { bm ->
+            val inputImage = InputImage.fromBitmap(bm, 0);
+            textRecognition.process(inputImage).addOnSuccessListener {
+                println("readedtext : ${it.text}")
+                readMathExpressionFromImage(it.text)
+            }.addOnFailureListener {
+                mainViewModel.setEquationText(getString(R.string.failed_recognize_text))
+                mainViewModel.setResultText(getString(R.string.failed_recognize_text))
+            }
+        }
+    }
+
+    /**
+     *
+     * */
+    private fun readMathExpressionFromImage(text: String) {
+        var firstOperand = ""
+        var secondOperand = ""
+        var isFirstOperand = true
+        var operator = ""
+        var isOperatorFound = false
+        var isMathExpression = true
+
+        if (text.isNotEmpty()) {
+            for (char: Char in text.lowercase()) {
+                if (char == ' ' || char == '\n') {
+                    // to handle space between expression and escape sequence
+                    continue
+                } else if (char in '0'..'9') {
+                    if (isFirstOperand) firstOperand += char
+                    else secondOperand += char
+                } else if (char == '+' || char == '-' || char == '*' || char == 'x' || char == '/') {
+                    if (!isOperatorFound) {
+                        isFirstOperand = false
+                        isOperatorFound = true
+                        operator += char
+                    } else {
+                        isMathExpression = false
+                        break
+                    }
+                } else {
+                    isMathExpression = false
+                    break
+                }
+            }
+        } else {
+            isMathExpression = false
+        }
+
+        if (firstOperand.isEmpty() || secondOperand.isEmpty() || operator.isEmpty()) isMathExpression = false
+
+        if (isMathExpression) {
+            val equation = "$firstOperand$operator$secondOperand"
+            val result = calculateMathExpression(firstOperand, secondOperand, operator)
+            mainViewModel.setEquationText(equation)
+            if (result != null) {
+                mainViewModel.setResultText(result.toString())
+            }
+        } else {
+            mainViewModel.setEquationText(getString(R.string.invalid_math_expression))
+            mainViewModel.setResultText(getString(R.string.invalid_math_expression))
+        }
+    }
+
+    private fun calculateMathExpression(first: String, second: String, operator: String): Int? {
+        return when (operator) {
+            "+" -> first.toInt() + second.toInt()
+            "-" -> first.toInt() - second.toInt()
+            "*" -> first.toInt() * second.toInt()
+            "x" -> first.toInt() * second.toInt()
+            "/" -> first.toInt() / second.toInt()
+            else -> null
+        }
     }
 
     companion object {

@@ -12,6 +12,9 @@ import com.app.scancalculator.ui.MainActivity.Companion.RC_CAMERA
 import com.app.scancalculator.ui.MainActivity.Companion.RC_MEDIA_IMAGE
 import com.app.scancalculator.ui.MainActivity.Companion.RC_EXTERNAL_STORAGE
 
+/**
+ * permission utils to check permission status with callback parameter to trigger if granted
+ * */
 object PermissionUtils {
 
     fun checkCameraPermission(activity: Activity, onGranted: () -> Unit) {

@@ -7,6 +7,9 @@ import android.net.Uri
 import java.io.IOException
 
 object ImageUtils {
+    /**
+     * handle image URI from gallery to covert to bitmap
+     * */
     fun uriToBitmap(context: Context, uri: Uri?): Bitmap? {
         return try {
             val inputStream = uri?.let { context.contentResolver.openInputStream(it) }

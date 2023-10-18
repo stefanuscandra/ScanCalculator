@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ScanCalculator</string>
+    <string name="failed_recognize_text">failed to recognize text</string>
+    <string name="invalid_math_expression">invalid math expression</string>
 </resources>

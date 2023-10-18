@@ -9,7 +9,7 @@
 
     <ImageView
         android:id="@+id/image_view"
-        android:layout_width="250dp"
+        android:layout_width="200dp"
         android:layout_height="250dp"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="10dp"
@@ -30,6 +30,7 @@
         android:id="@+id/text_equation_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/image_view"
         android:layout_marginStart="6dp"
         android:layout_marginBottom="10dp"
         android:layout_toEndOf="@+id/text_equation"
