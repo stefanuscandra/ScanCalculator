@@ -7,6 +7,7 @@ import android.widget.Toast
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.graphics.Bitmap
 import android.provider.MediaStore
+import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.app.scancalculator.BuildConfig
 import com.app.scancalculator.R
@@ -129,7 +130,7 @@ class MainActivity : AppCompatActivity() {
     private fun readTextFromImage(bitmap: Bitmap?) {
         val textRecognition = TextRecognition.getClient(textRecognizerOptions)
         bitmap?.let { bm ->
-            val inputImage = InputImage.fromBitmap(bm, 0);
+            val inputImage = InputImage.fromBitmap(bm, 0)
             textRecognition.process(inputImage).addOnSuccessListener {
                 readMathExpressionFromImage(it.text)
             }.addOnFailureListener {
@@ -145,6 +146,9 @@ class MainActivity : AppCompatActivity() {
      * constraint :
      *  - only very simple 2 argument operations
      *  - operator that must be supported  +,-,*,/
+     *  - get first expression from multiple expression e.g 2+3 -> get this
+     *                                                      5+1
+     *                                                      1+1
      * */
     private fun readMathExpressionFromImage(text: String) {
         var firstOperand = ""
@@ -155,9 +159,9 @@ class MainActivity : AppCompatActivity() {
         var isMathExpression = true
 
         if (text.isNotEmpty()) {
-            for (char: Char in text.lowercase()) {
-                if (char == ' ' || char == '\n') {
-                    // to handle space between expression and escape sequence
+            val filterNewLineText = text.split('\n').first()
+            for (char: Char in filterNewLineText.lowercase()) {
+                if (char == ' ') { // to skip space between expression
                     continue
                 } else if (char in '0'..'9') {
                     if (isFirstOperand) firstOperand += char
